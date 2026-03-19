@@ -54,7 +54,7 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
       Do NOT include any text outside of the JSON array.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         contents: prompt,
         config: { 
           responseMimeType: "application/json",
@@ -93,10 +93,14 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
       }
     } catch (error: any) {
       console.error("Job search error:", error);
-      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+      const errorMessage = error?.message || String(error);
+      
+      if (errorMessage.includes('API_KEY_INVALID') || errorMessage.includes('API key not valid')) {
         alert("The provided GEMINI_API_KEY is invalid. Please check your key.");
+      } else if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+        alert("AI Search limit reached. Please try again in a few minutes.");
       } else {
-        alert("Failed to fetch jobs. This could be due to a network issue or API limit.");
+        alert(`Search Error: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`);
       }
     }
     setIsSearching(false);
