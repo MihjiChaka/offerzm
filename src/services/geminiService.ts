@@ -1,16 +1,33 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.GEMINI_API_KEY || "";
+const getApiKey = () => {
+  // Try multiple sources for the API key
+  // 1. process.env (injected by Vite define)
+  // 2. import.meta.env (Vite's native way)
+  // 3. window.GOOGLE_MAPS_PLATFORM_KEY (just in case)
+  const key = 
+    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
+    (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) || 
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    (import.meta as any).env?.GEMINI_API_KEY ||
+    "";
+  return key;
+};
+
+const apiKey = getApiKey();
 if (!apiKey) {
-  console.warn("GEMINI_API_KEY is missing. AI features will not work. Please ensure it is set in your environment variables.");
+  console.warn("GEMINI_API_KEY is missing. AI features will not work. Please ensure it is set in your environment variables (e.g., in Netlify or .env).");
 }
 
 export const ai = new GoogleGenAI({ apiKey });
 
-const model = "gemini-1.5-flash";
+const model = "gemini-3-flash-preview";
 
 export async function getExpertSuggestions(type: 'summary' | 'experience' | 'skills' | 'cover_letter' | 'interview_prep', context: string) {
   try {
+    if (!apiKey) {
+      return "Error: GEMINI_API_KEY is missing. Please set it in your environment variables.";
+    }
     const currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     
     let prompt = `Today's date is ${currentDate}. `;
@@ -40,8 +57,11 @@ export async function getExpertSuggestions(type: 'summary' | 'experience' | 'ski
     });
 
     return response.text || "";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Expert Service Error:", error);
-    return "Could not generate suggestions at this time.";
+    if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+      return "Error: The provided GEMINI_API_KEY is invalid. Please check your key.";
+    }
+    return "Could not generate suggestions at this time. Please check your internet connection or API key.";
   }
 }

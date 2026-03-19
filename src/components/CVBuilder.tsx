@@ -64,6 +64,12 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
     if (!selectedJob) return;
     setIsTailoring(true);
     try {
+      const apiKey = (ai as any).apiKey;
+      if (!apiKey) {
+        alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+        setIsTailoring(false);
+        return;
+      }
       const prompt = `Tailor this CV data for the following job listing. 
       Job: ${selectedJob.title} at ${selectedJob.company}. Description: ${selectedJob.description}. Requirements: ${selectedJob.requirements.join(', ')}.
       Current CV Data: ${JSON.stringify(data)}
@@ -83,9 +89,13 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
         setData(tailoredData);
         alert("CV tailored successfully for " + selectedJob.title + "!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Tailoring error:", error);
-      alert("Failed to tailor CV. Please try again.");
+      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+        alert("The provided GEMINI_API_KEY is invalid. Please check your key.");
+      } else {
+        alert("Failed to tailor CV. Please try again.");
+      }
     }
     setIsTailoring(false);
   };
@@ -97,6 +107,12 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
     }
     setIsGeneratingSummary(true);
     try {
+      const apiKey = (ai as any).apiKey;
+      if (!apiKey) {
+        alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+        setIsGeneratingSummary(false);
+        return;
+      }
       const prompt = `Generate a professional 2-3 sentence CV summary for ${data.personal.fullName} who has skills in: ${data.skills.join(', ')}. Make it enticing for recruiters.`;
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -108,8 +124,11 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
           personal: { ...prev.personal, summary: response.text!.trim() }
         }));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Summary error:", error);
+      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+        alert("The provided GEMINI_API_KEY is invalid. Please check your key.");
+      }
     }
     setIsGeneratingSummary(false);
   };
@@ -117,6 +136,12 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
   const analyzeCV = async () => {
     setIsAnalyzing(true);
     try {
+      const apiKey = (ai as any).apiKey;
+      if (!apiKey) {
+        alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+        setIsAnalyzing(false);
+        return;
+      }
       const prompt = `Analyze this CV data and provide a score from 0-100 and 3 short professional tips for improvement. 
       Data: ${JSON.stringify(data)}
       Return JSON format: { "score": number, "tips": string[] }`;
@@ -131,8 +156,11 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
         const result = JSON.parse(response.text);
         setCvScore(result);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis error:", error);
+      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+        alert("The provided GEMINI_API_KEY is invalid. Please check your key.");
+      }
     }
     setIsAnalyzing(false);
   };

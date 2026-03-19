@@ -9,7 +9,17 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 // Configure PDF.js worker using Vite's native worker loading
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-const apiKey = process.env.GEMINI_API_KEY || "";
+const getApiKey = () => {
+  const key = 
+    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
+    (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) || 
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    (import.meta as any).env?.GEMINI_API_KEY ||
+    "";
+  return key;
+};
+
+const apiKey = getApiKey();
 if (!apiKey) {
   console.warn("GEMINI_API_KEY is missing in CVRoast. AI features will not work.");
 }
@@ -91,9 +101,13 @@ export default function CVRoast() {
     const typeLabel = roastType === 'cv' ? 'CV' : 'Cover Letter';
     
     try {
+      if (!apiKey) {
+        alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+        return;
+      }
       const currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3-flash-preview",
         contents: `Today's date is ${currentDate}. Roast this ${typeLabel} text in a funny, witty, but helpful way. Use Zambian slang (like 'mwebantu', 'zed', 'kopala', 'chalila', 'ba boss', 'chi guy') and cultural references. 
         Be brutally honest about formatting, clichés, boring summaries, and generic statements. 
         Also, provide a '${typeLabel} Score' out of 100 and a funny 'Job Seeker Title' (e.g., 'The Professional Intern', 'The Overqualified Dreamer', 'The Ghost Applicant').
@@ -113,9 +127,13 @@ export default function CVRoast() {
       const jsonText = rawText.replace(/```json\n?|```/g, '').trim();
       const result = JSON.parse(jsonText);
       setRoast(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Roast error:", error);
-      alert(`The experts are too shocked by your ${typeLabel} to roast it right now. Try again!`);
+      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+        alert("The provided GEMINI_API_KEY is invalid. Please check your key.");
+      } else {
+        alert(`The experts are too shocked by your ${typeLabel} to roast it right now. Try again!`);
+      }
     } finally {
       setLoading(false);
     }
