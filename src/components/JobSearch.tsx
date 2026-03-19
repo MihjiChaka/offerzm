@@ -163,7 +163,28 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
         {/* Results */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {jobs.length > 0 ? (
+            {isSearching ? (
+              // Loading Skeleton
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 animate-pulse">
+                    <div className="flex justify-between mb-4">
+                      <div className="h-6 bg-slate-100 rounded-lg w-1/2"></div>
+                      <div className="h-6 bg-slate-100 rounded-full w-20"></div>
+                    </div>
+                    <div className="h-4 bg-slate-50 rounded-lg w-3/4 mb-2"></div>
+                    <div className="h-4 bg-slate-50 rounded-lg w-1/2 mb-6"></div>
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-slate-50 rounded-lg w-16"></div>
+                      <div className="h-6 bg-slate-50 rounded-lg w-16"></div>
+                    </div>
+                  </div>
+                ))}
+                <div className="text-center py-4">
+                  <p className="text-sm text-slate-400 animate-bounce">Searching Zambian job boards and LinkedIn...</p>
+                </div>
+              </div>
+            ) : jobs.length > 0 ? (
               jobs.map((job) => (
                 <motion.div 
                   key={job.id}
