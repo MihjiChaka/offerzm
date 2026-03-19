@@ -1,10 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 
-export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const apiKey = process.env.GEMINI_API_KEY || "";
+if (!apiKey) {
+  console.warn("GEMINI_API_KEY is missing. AI features will not work. Please ensure it is set in your environment variables.");
+}
+
+export const ai = new GoogleGenAI({ apiKey });
+
+const model = "gemini-1.5-flash";
 
 export async function getExpertSuggestions(type: 'summary' | 'experience' | 'skills' | 'cover_letter' | 'interview_prep', context: string) {
   try {
-    const model = "gemini-3-flash-preview";
     const currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     
     let prompt = `Today's date is ${currentDate}. `;

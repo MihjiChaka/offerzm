@@ -9,7 +9,11 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 // Configure PDF.js worker using Vite's native worker loading
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const apiKey = process.env.GEMINI_API_KEY || "";
+if (!apiKey) {
+  console.warn("GEMINI_API_KEY is missing in CVRoast. AI features will not work.");
+}
+const ai = new GoogleGenAI({ apiKey });
 
 type RoastType = 'cv' | 'cover_letter';
 
@@ -89,7 +93,7 @@ export default function CVRoast() {
     try {
       const currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: `Today's date is ${currentDate}. Roast this ${typeLabel} text in a funny, witty, but helpful way. Use Zambian slang (like 'mwebantu', 'zed', 'kopala', 'chalila', 'ba boss', 'chi guy') and cultural references. 
         Be brutally honest about formatting, clichés, boring summaries, and generic statements. 
         Also, provide a '${typeLabel} Score' out of 100 and a funny 'Job Seeker Title' (e.g., 'The Professional Intern', 'The Overqualified Dreamer', 'The Ghost Applicant').
