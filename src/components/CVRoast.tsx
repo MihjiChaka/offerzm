@@ -9,7 +9,7 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 // Configure PDF.js worker using Vite's native worker loading
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 type RoastType = 'cv' | 'cover_letter';
 
