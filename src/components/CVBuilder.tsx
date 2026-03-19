@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { View } from '../App';
-import { getExpertSuggestions, ai } from '../services/geminiService';
+import { getExpertSuggestions, ai, apiKey } from '../services/geminiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentPreviewWrapper from './DocumentPreviewWrapper';
@@ -64,7 +64,6 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
     if (!selectedJob) return;
     setIsTailoring(true);
     try {
-      const apiKey = (ai as any).apiKey;
       if (!apiKey) {
         alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
         setIsTailoring(false);
@@ -107,7 +106,6 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
     }
     setIsGeneratingSummary(true);
     try {
-      const apiKey = (ai as any).apiKey;
       if (!apiKey) {
         alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
         setIsGeneratingSummary(false);
@@ -136,7 +134,6 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
   const analyzeCV = async () => {
     setIsAnalyzing(true);
     try {
-      const apiKey = (ai as any).apiKey;
       if (!apiKey) {
         alert("GEMINI_API_KEY is missing. Please set it in your environment variables.");
         setIsAnalyzing(false);

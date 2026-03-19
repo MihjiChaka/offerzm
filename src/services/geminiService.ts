@@ -1,18 +1,23 @@
 import { GoogleGenAI } from "@google/genai";
 
 const getApiKey = () => {
-  // 1. Check process.env.GEMINI_API_KEY (injected by Vite define)
-  // 2. Check import.meta.env.VITE_GEMINI_API_KEY (standard Vite way)
-  // 3. Fallback to empty string
-  return (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
+  // Use exact strings so Vite's 'define' can replace them during build
+  const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+  return key;
 };
 
-const apiKey = getApiKey();
+export const apiKey = getApiKey();
 if (!apiKey) {
   console.warn("GEMINI_API_KEY is missing. AI features will not work. Please ensure it is set in your environment variables (e.g., in Netlify or .env).");
 }
 
 export const ai = new GoogleGenAI({ apiKey });
+
+// Helper to update API key at runtime (fallback)
+export const updateApiKey = (newKey: string) => {
+  (ai as any).apiKey = newKey;
+  // Also update the local exported apiKey if needed, though ai instance is what matters
+};
 
 const model = "gemini-3-flash-preview";
 

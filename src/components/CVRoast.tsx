@@ -2,22 +2,12 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Flame, Share2, RefreshCw, MessageSquare, Trophy, AlertCircle, Upload, FileText, X, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { GoogleGenAI } from "@google/genai";
+import { ai, apiKey } from '../services/geminiService';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
 // Configure PDF.js worker using Vite's native worker loading
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-
-const getApiKey = () => {
-  return (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
-};
-
-const apiKey = getApiKey();
-if (!apiKey) {
-  console.warn("GEMINI_API_KEY is missing in CVRoast. AI features will not work.");
-}
-const ai = new GoogleGenAI({ apiKey });
 
 type RoastType = 'cv' | 'cover_letter';
 
