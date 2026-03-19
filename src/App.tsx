@@ -33,13 +33,15 @@ import WhatsAppButton from './components/WhatsAppButton';
 import Dashboard from './components/Dashboard';
 import CoverLetterBuilder from './components/CoverLetterBuilder';
 import CVRoast from './components/CVRoast';
+import JobSearch from './components/JobSearch';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 
-export type View = 'home' | 'builder' | 'templates' | 'dashboard' | 'services' | 'cover-letter-builder' | 'roast' | 'terms' | 'privacy';
+export type View = 'home' | 'builder' | 'templates' | 'dashboard' | 'services' | 'cover-letter-builder' | 'roast' | 'terms' | 'privacy' | 'jobs';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
+  const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('modern');
   const [showTerms, setShowTerms] = useState(false);
@@ -53,7 +55,8 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navigateTo = (view: View) => {
+  const navigateTo = (view: View, jobData?: any) => {
+    if (jobData) setSelectedJob(jobData);
     setCurrentView(view);
     window.scrollTo(0, 0);
   };
@@ -119,7 +122,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <CVBuilder navigateTo={navigateTo} templateId={selectedTemplate} />
+              <CVBuilder navigateTo={navigateTo} templateId={selectedTemplate} selectedJob={selectedJob} />
             </motion.div>
           )}
 
@@ -175,6 +178,17 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
             >
               <CVRoast />
+            </motion.div>
+          )}
+
+          {currentView === 'jobs' && (
+            <motion.div
+              key="jobs"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <JobSearch navigateTo={navigateTo} />
             </motion.div>
           )}
 

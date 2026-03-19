@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export interface CoverLetterData {
@@ -39,6 +40,14 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
       }
     }
     return dateStr;
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return '??';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '??';
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   const containerStyle = { 
@@ -124,9 +133,9 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
                       {data.personal.fullName || "Your Name"}
                     </h1>
                     <div className="flex flex-col gap-1 text-[10pt] text-slate-500">
-                      <div className="flex items-center">{data.personal.email}</div>
-                      <div className="flex items-center">{data.personal.phone}</div>
-                      <div className="flex items-center">{data.personal.location}</div>
+                      <div className="flex items-center"><span className="text-primary font-bold mr-2">Email:</span> {data.personal.email}</div>
+                      <div className="flex items-center"><span className="text-primary font-bold mr-2">Phone:</span> {data.personal.phone}</div>
+                      <div className="flex items-center"><span className="text-primary font-bold mr-2">Location:</span> {data.personal.location}</div>
                     </div>
                   </div>
                 </div>
@@ -138,14 +147,14 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
               <div className="flex -mx-[20mm] -mt-[20mm] mb-12 min-h-[60mm]">
                 <div className="w-1/3 bg-primary text-white p-10 flex flex-col gap-8">
                   <div className="w-24 h-24 bg-accent rounded-3xl rotate-3 flex items-center justify-center text-primary font-bold text-4xl shadow-lg">
-                    {data.personal.fullName?.charAt(0) || "Y"}
+                    {getInitials(data.personal.fullName)}
                   </div>
                   <div className="space-y-6 text-[9pt]">
-                    <div className="font-bold uppercase tracking-[0.2em] text-accent border-b border-white-20 pb-2">Contact</div>
+                    <div className="font-bold uppercase tracking-[0.2em] text-primary border-b border-white-20 pb-2">Contact</div>
                     <div className="space-y-3 opacity-90">
-                      <div className="flex items-center"><span className="break-all">{data.personal.email}</span></div>
-                      <div className="flex items-center">{data.personal.phone}</div>
-                      <div className="flex items-center">{data.personal.location}</div>
+                      <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">E:</span> <span className="break-all">{data.personal.email}</span></div>
+                      <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">P:</span> {data.personal.phone}</div>
+                      <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">L:</span> {data.personal.location}</div>
                     </div>
                   </div>
                 </div>

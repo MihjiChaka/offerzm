@@ -63,10 +63,10 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
 
   const getInitials = (name: string) => {
     if (!name) return '??';
-    const parts = name.split(' ').filter(Boolean);
+    const parts = name.trim().split(/\s+/).filter(Boolean);
     if (parts.length === 0) return '??';
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   if (templateId === 'creative') {
@@ -78,19 +78,19 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
           </div>
           <div className="space-y-8">
             <div>
-              <h2 className="text-[11pt] font-bold uppercase tracking-[0.2em] text-accent mb-4 border-b border-white-10 pb-2">Contact</h2>
+              <h2 className="text-[11pt] font-bold uppercase tracking-[0.2em] text-primary mb-4 border-b border-white-10 pb-2">Contact</h2>
               <div className="space-y-4 text-[9pt] opacity-90">
-                {data.personal.email && <div className="flex items-center"><Mail size={14} className="text-accent shrink-0 mr-3" /> <span className="break-all">{data.personal.email}</span></div>}
-                {data.personal.phone && <div className="flex items-center"><Phone size={14} className="text-accent shrink-0 mr-3" /> {data.personal.phone}</div>}
-                {data.personal.location && <div className="flex items-center"><MapPin size={14} className="text-accent shrink-0 mr-3" /> {data.personal.location}</div>}
+                {data.personal.email && <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">E:</span> <span className="break-all">{data.personal.email}</span></div>}
+                {data.personal.phone && <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">P:</span> {data.personal.phone}</div>}
+                {data.personal.location && <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">L:</span> {data.personal.location}</div>}
               </div>
             </div>
             {data.skills.length > 0 && (
               <div>
                 <h2 className="text-[11pt] font-bold uppercase tracking-[0.2em] text-accent mb-4 border-b border-white-10 pb-2">Skills</h2>
                 <div className="flex flex-wrap gap-2">
-                  {data.skills.map(skill => (
-                    <span key={skill} className="px-3 py-1 bg-white-10 rounded-full text-[8pt] text-white border border-white-5">{skill}</span>
+                  {data.skills.map((skill, index) => (
+                    <span key={`${skill}-${index}`} className="px-3 py-1 bg-white-10 rounded-full text-[8pt] text-white border border-white-5">{skill}</span>
                   ))}
                 </div>
               </div>
@@ -269,8 +269,8 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
                 <div className="bg-slate-50 p-6 rounded-xl">
                   <h2 className="text-[11pt] font-bold text-primary uppercase mb-6 border-b border-slate-200 pb-2">Expertise</h2>
                   <ul className="space-y-3">
-                    {data.skills.map(skill => (
-                      <li key={skill} className="flex items-start gap-3 text-[10pt] text-slate-700">
+                    {data.skills.map((skill, index) => (
+                      <li key={`${skill}-${index}`} className="flex items-start gap-3 text-[10pt] text-slate-700">
                         <div className="w-1.5 h-1.5 bg-accent rounded-full mt-2 shrink-0" />
                         {skill}
                       </li>
@@ -320,14 +320,14 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
   return (
     <div className="bg-white shadow-lg mx-auto mb-8 page-container" style={containerStyle}>
       <div className="p-16">
-        <div className="border-b-4 border-primary pb-8 mb-10">
+        <div className="border-b-2 border-slate-100 pb-8 mb-10">
           <h1 className="text-4xl font-bold text-primary uppercase mb-4 break-words leading-tight w-full">
             {data.personal.fullName || "Your Name"}
           </h1>
-          <div className="flex flex-wrap text-slate-500 text-[10pt] font-medium">
-            {data.personal.email && <div className="flex items-center mr-8 mb-2"><Mail size={14} className="text-accent shrink-0 mr-2" /> {data.personal.email}</div>}
-            {data.personal.phone && <div className="flex items-center mr-8 mb-2"><Phone size={14} className="text-accent shrink-0 mr-2" /> {data.personal.phone}</div>}
-            {data.personal.location && <div className="flex items-center mr-8 mb-2"><MapPin size={14} className="text-accent shrink-0 mr-2" /> {data.personal.location}</div>}
+          <div className="flex flex-wrap text-slate-500 text-[10pt] font-medium gap-y-2">
+            {data.personal.email && <div className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Email:</span> {data.personal.email}</div>}
+            {data.personal.phone && <div className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Phone:</span> {data.personal.phone}</div>}
+            {data.personal.location && <div className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Location:</span> {data.personal.location}</div>}
           </div>
         </div>
 
@@ -376,8 +376,8 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
             <div>
               <h2 className="text-[12pt] font-bold text-primary uppercase tracking-wider mb-6 border-l-4 border-accent pl-4">Core Skills</h2>
               <div className="flex flex-wrap gap-2">
-                {data.skills.map(skill => (
-                  <span key={skill} className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-slate-700 font-bold text-[9pt]">
+                {data.skills.map((skill, index) => (
+                  <span key={`${skill}-${index}`} className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-slate-700 font-bold text-[9pt]">
                     {skill}
                   </span>
                 ))}
@@ -395,8 +395,8 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
                   <div className="font-bold text-slate-900 mb-1">{ref.name}</div>
                   <div className="text-primary font-medium text-[9pt] mb-2">{ref.position} at {ref.company}</div>
                   <div className="text-slate-500 text-[9pt] flex flex-col gap-1">
-                    <div className="flex items-center"><Phone size={12} className="shrink-0 mr-2" /> {ref.phone}</div>
-                    {ref.email && <div className="flex items-center"><Mail size={12} className="shrink-0 mr-2" /> {ref.email}</div>}
+                    <div className="flex items-center"><span className="text-primary font-bold mr-2">P:</span> {ref.phone}</div>
+                    {ref.email && <div className="flex items-center"><span className="text-primary font-bold mr-2">E:</span> {ref.email}</div>}
                   </div>
                 </div>
               ))}

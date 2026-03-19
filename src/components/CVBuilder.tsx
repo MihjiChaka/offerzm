@@ -19,11 +19,12 @@ import {
   X,
   Mail,
   MapPin,
+  Zap,
   Users
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { View } from '../App';
-import { getExpertSuggestions } from '../services/geminiService';
+import { getExpertSuggestions, ai } from '../services/geminiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentPreviewWrapper from './DocumentPreviewWrapper';
@@ -32,6 +33,7 @@ import CVPreview, { CVData } from './CVPreview';
 interface CVBuilderProps {
   navigateTo: (view: View) => void;
   templateId?: string;
+  selectedJob?: any;
 }
 
 const initialData: CVData = {
@@ -48,11 +50,92 @@ const initialData: CVData = {
   references: [],
 };
 
-export default function CVBuilder({ navigateTo, templateId = 'modern' }: CVBuilderProps) {
+export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJob }: CVBuilderProps) {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<CVData>(initialData);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [cvScore, setCvScore] = useState<{ score: number; tips: string[] } | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isTailoring, setIsTailoring] = useState(false);
+
+  const tailorCV = async () => {
+    if (!selectedJob) return;
+    setIsTailoring(true);
+    try {
+      const prompt = `Tailor this CV data for the following job listing. 
+      Job: ${selectedJob.title} at ${selectedJob.company}. Description: ${selectedJob.description}. Requirements: ${selectedJob.requirements.join(', ')}.
+      Current CV Data: ${JSON.stringify(data)}
+      
+      Update the professional summary and the descriptions of work experiences to highlight relevant skills and achievements that match the job requirements. 
+      Keep the personal info, education, and references as they are unless they need minor tweaks for relevance.
+      Return the updated CV data in the same JSON format.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+      });
+
+      if (response.text) {
+        const tailoredData = JSON.parse(response.text);
+        setData(tailoredData);
+        alert("CV tailored successfully for " + selectedJob.title + "!");
+      }
+    } catch (error) {
+      console.error("Tailoring error:", error);
+      alert("Failed to tailor CV. Please try again.");
+    }
+    setIsTailoring(false);
+  };
+
+  const generateMagicSummary = async () => {
+    if (!data.personal.fullName || data.skills.length === 0) {
+      alert("Please enter your name and some skills first!");
+      return;
+    }
+    setIsGeneratingSummary(true);
+    try {
+      const prompt = `Generate a professional 2-3 sentence CV summary for ${data.personal.fullName} who has skills in: ${data.skills.join(', ')}. Make it enticing for recruiters.`;
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+      if (response.text) {
+        setData(prev => ({
+          ...prev,
+          personal: { ...prev.personal, summary: response.text!.trim() }
+        }));
+      }
+    } catch (error) {
+      console.error("Summary error:", error);
+    }
+    setIsGeneratingSummary(false);
+  };
+
+  const analyzeCV = async () => {
+    setIsAnalyzing(true);
+    try {
+      const prompt = `Analyze this CV data and provide a score from 0-100 and 3 short professional tips for improvement. 
+      Data: ${JSON.stringify(data)}
+      Return JSON format: { "score": number, "tips": string[] }`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+      });
+      
+      if (response.text) {
+        const result = JSON.parse(response.text);
+        setCvScore(result);
+      }
+    } catch (error) {
+      console.error("Analysis error:", error);
+    }
+    setIsAnalyzing(false);
+  };
   const cvPreviewRef = useRef<HTMLDivElement>(null);
 
   const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -178,24 +261,61 @@ export default function CVBuilder({ navigateTo, templateId = 'modern' }: CVBuild
       if (!previewElement) return;
 
       const canvas = await html2canvas(previewElement, {
-        scale: 3, // 3x is plenty for 210mm width
+        scale: 2,
         useCORS: true,
         logging: false,
         allowTaint: true,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        width: 794, // Fixed A4 width in pixels at 96dpi
+        width: 794,
         onclone: (clonedDoc) => {
           const previewContent = clonedDoc.body.querySelector('.preview-content') as HTMLElement;
           if (previewContent) {
             previewContent.style.transform = 'none';
             previewContent.style.position = 'relative';
+            previewContent.style.width = '794px';
+            previewContent.style.height = 'auto';
+            previewContent.style.display = 'block';
+            
+            // Hide siblings of previewContent (like the spacer in DocumentPreviewWrapper)
+            const parent = previewContent.parentElement;
+            if (parent) {
+              Array.from(parent.children).forEach(child => {
+                if (child !== previewContent) {
+                  (child as HTMLElement).style.display = 'none';
+                }
+              });
+              parent.style.width = '794px';
+              parent.style.height = 'auto';
+              parent.style.minHeight = '0';
+              parent.style.padding = '0';
+              parent.style.margin = '0';
+              parent.style.background = 'white';
+              parent.style.boxShadow = 'none';
+            }
           }
+
           const el = clonedDoc.body.querySelector('.page-container') as HTMLElement;
           if (el) {
             el.style.transform = 'none';
-            el.style.width = '210mm';
-            el.style.minHeight = '297mm';
+            el.style.width = '794px';
+            el.style.minHeight = '1123px';
+            el.style.height = 'auto';
+            el.style.margin = '0';
+            el.style.padding = '0';
+            el.style.boxShadow = 'none';
+          }
+          
+          // Ensure all parents are visible and have auto height
+          let parent = el?.parentElement;
+          while (parent && parent !== clonedDoc.body) {
+            parent.style.height = 'auto';
+            parent.style.minHeight = '0';
+            parent.style.overflow = 'visible';
+            parent.style.display = 'block';
+            parent.style.margin = '0';
+            parent.style.padding = '0';
+            parent = parent.parentElement;
           }
         }
       });
@@ -213,8 +333,9 @@ export default function CVBuilder({ navigateTo, templateId = 'modern' }: CVBuild
       
       // Calculate how many pages we need based on the canvas height
       // canvas.width is 794 (A4 at 96dpi), so A4 height at 96dpi is 1123
-      const pxPageHeight = Math.floor(canvas.width * (297 / 210));
-      const totalPages = Math.ceil(canvas.height / pxPageHeight);
+      const pxPageHeight = Math.round(canvas.width * (297 / 210));
+      // Use a small epsilon (20px) to avoid creating a new page for tiny overflows
+      const totalPages = Math.ceil((canvas.height - 20) / pxPageHeight);
 
       for (let i = 0; i < totalPages; i++) {
         if (i > 0) pdf.addPage();
@@ -287,6 +408,32 @@ export default function CVBuilder({ navigateTo, templateId = 'modern' }: CVBuild
                 </div>
 
                 <AnimatePresence mode="wait">
+                  {selectedJob && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-8 p-4 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-white shrink-0">
+                          <Briefcase size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-primary">Applying for: {selectedJob.title}</h4>
+                          <p className="text-xs text-slate-500">{selectedJob.company} • {selectedJob.location}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={tailorCV}
+                        disabled={isTailoring}
+                        className="px-4 py-2 bg-accent text-primary text-xs font-bold rounded-xl hover:bg-accent-hover transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isTailoring ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                        Auto-Tailor CV
+                      </button>
+                    </motion.div>
+                  )}
+
                   {step === 1 && (
                     <motion.div
                       key="step1"
@@ -633,8 +780,61 @@ export default function CVBuilder({ navigateTo, templateId = 'modern' }: CVBuild
                   <CVPreview data={data} templateId={templateId} />
                 </DocumentPreviewWrapper>
               </div>
+
+              {/* CV Strength Meter */}
+              <div className="mt-6 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="font-bold text-primary flex items-center gap-2">
+                      <Zap size={18} className="text-accent" />
+                      CV Strength
+                    </h4>
+                    {cvScore && (
+                      <span className="text-2xl font-black text-primary">{cvScore.score}%</span>
+                    )}
+                  </div>
+
+                  {!cvScore ? (
+                    <button 
+                      onClick={analyzeCV}
+                      disabled={isAnalyzing}
+                      className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-50"
+                    >
+                      {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                      Analyze My CV
+                    </button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${cvScore.score}%` }}
+                          className="h-full bg-accent"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        {cvScore.tips.map((tip, i) => (
+                          <div key={i} className="flex items-start gap-2 text-[11px] text-slate-500">
+                            <div className="w-1 h-1 bg-accent rounded-full mt-1.5 shrink-0" />
+                            {tip}
+                          </div>
+                        ))}
+                      </div>
+                      <button 
+                        onClick={analyzeCV}
+                        disabled={isAnalyzing}
+                        className="text-[10px] font-bold text-slate-400 hover:text-primary transition-colors uppercase tracking-widest"
+                      >
+                        Re-analyze
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
               
-              <div className="mt-6 p-4 bg-primary-faint rounded-2xl border border-slate-100">
+              <div className="mt-4 p-4 bg-primary-faint rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-accent-muted rounded-full flex items-center justify-center text-accent">
                     <Sparkles size={20} />

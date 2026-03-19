@@ -16,6 +16,7 @@ export default function Navbar({ currentView, navigateTo, isScrolled }: NavbarPr
     { name: 'Home', view: 'home' as View },
     { name: 'Templates', view: 'templates' as View },
     { name: 'Services', view: 'services' as View },
+    { name: 'Jobs', view: 'jobs' as View },
     { name: '🔥 Roast', view: 'roast' as View },
   ];
 

@@ -119,24 +119,59 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
         const canvas = await html2canvas(page, {
-          scale: 3, // 3x is plenty for 210mm width
+          scale: 3,
           useCORS: true,
           logging: false,
           allowTaint: true,
           backgroundColor: '#ffffff',
           imageTimeout: 0,
-          width: 794, // Fixed A4 width in pixels at 96dpi
+          width: 794,
           onclone: (clonedDoc) => {
             const previewContent = clonedDoc.body.querySelector('.preview-content') as HTMLElement;
             if (previewContent) {
               previewContent.style.transform = 'none';
               previewContent.style.position = 'relative';
+              previewContent.style.width = '794px';
+              previewContent.style.height = 'auto';
+              previewContent.style.display = 'block';
+              
+              // Hide siblings of previewContent (like the spacer in DocumentPreviewWrapper)
+              const parent = previewContent.parentElement;
+              if (parent) {
+                Array.from(parent.children).forEach(child => {
+                  if (child !== previewContent) {
+                    (child as HTMLElement).style.display = 'none';
+                  }
+                });
+                parent.style.width = '794px';
+                parent.style.height = 'auto';
+                parent.style.minHeight = '0';
+                parent.style.padding = '0';
+                parent.style.margin = '0';
+                parent.style.background = 'white';
+                parent.style.boxShadow = 'none';
+              }
             }
             const el = clonedDoc.body.querySelector(`[data-page="${i + 1}"]`) as HTMLElement;
             if (el) {
               el.style.transform = 'none';
               el.style.width = '210mm';
               el.style.minHeight = '297mm';
+              el.style.height = 'auto';
+              el.style.margin = '0';
+              el.style.padding = '0';
+              el.style.boxShadow = 'none';
+            }
+            // Ensure all parents are visible and have auto height
+            let parent = el?.parentElement;
+            while (parent && parent !== clonedDoc.body) {
+              parent.style.height = 'auto';
+              parent.style.minHeight = '0';
+              parent.style.overflow = 'visible';
+              parent.style.display = 'block';
+              parent.style.margin = '0';
+              parent.style.padding = '0';
+              parent = parent.parentElement;
             }
           }
         });
