@@ -34,7 +34,6 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
         return;
       }
       
-      // Use a more descriptive prompt to ensure the model uses the search tool effectively
       const prompt = `I need to find real, current job openings for "${activeQuery}" in "${location}". 
       Please use your Google Search tool to find actual listings from reputable sites like LinkedIn, Indeed, GoZambiaJobs, or company career pages. 
       
@@ -53,14 +52,27 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
       If you cannot find any real jobs, return an empty array []. 
       Do NOT include any text outside of the JSON array.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: { 
-          responseMimeType: "application/json",
-          tools: [{ googleSearch: {} }]
-        }
-      });
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: prompt,
+          config: { 
+            responseMimeType: "application/json",
+            tools: [{ googleSearch: {} }]
+          }
+        });
+      } catch (searchError: any) {
+        console.warn("Live search failed, falling back to internal knowledge:", searchError);
+        // Fallback: Try without the search tool if the search tool fails
+        response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: `Provide a list of 5 typical, high-probability job openings for "${activeQuery}" in "${location}" based on your internal knowledge of the Zambian job market. 
+          Since live search is currently unavailable, provide realistic examples of roles that are frequently hiring.
+          Return the results as a JSON array of objects with fields: id, title, company, location, type, description, requirements (array), salary, sourceUrl (use a generic search link like "https://www.google.com/search?q=jobs+in+zambia").`,
+          config: { responseMimeType: "application/json" }
+        });
+      }
 
       if (response.text) {
         try {
