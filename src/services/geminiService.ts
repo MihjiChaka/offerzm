@@ -7,6 +7,8 @@ const getApiKey = () => {
 };
 
 export const apiKey = getApiKey();
+console.log("API Key detected:", apiKey ? "Yes (starts with " + apiKey.substring(0, 4) + "...)" : "No");
+
 if (!apiKey) {
   console.warn("GEMINI_API_KEY is missing. AI features will not work. Please ensure it is set in your environment variables (e.g., in Netlify or .env).");
 }

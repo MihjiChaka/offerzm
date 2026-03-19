@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, MapPin, Briefcase, Building2, Sparkles, Loader2, ArrowRight, ExternalLink } from 'lucide-react';
-import { ai } from '../services/geminiService';
+import { ai, apiKey } from '../services/geminiService';
 import { View } from '../App';
 
 interface Job {
@@ -28,14 +28,33 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
     
     setIsSearching(true);
     try {
-      const prompt = `Find real, current job openings for "${activeQuery}" in "${location}" from the web. 
-      Use Google Search to find actual listings from reputable sites like LinkedIn, Indeed, GoZambiaJobs, or company career pages. 
-      Return the results in JSON format as an array of objects with these fields: 
-      id (string), title (string), company (string), location (string), type (string, e.g. Full-time), description (string, 1-2 sentences), requirements (array of strings), salary (string, use "Negotiable" if unknown), sourceUrl (string).
-      Ensure the data is real and current. If you find multiple sources, prioritize the most recent ones.`;
+      if (!apiKey && !(ai as any).apiKey) {
+        alert("GEMINI_API_KEY is missing. Please set it in your environment variables or use the 'Connect AI' button.");
+        setIsSearching(false);
+        return;
+      }
+      
+      // Use a more descriptive prompt to ensure the model uses the search tool effectively
+      const prompt = `I need to find real, current job openings for "${activeQuery}" in "${location}". 
+      Please use your Google Search tool to find actual listings from reputable sites like LinkedIn, Indeed, GoZambiaJobs, or company career pages. 
+      
+      CRITICAL: You MUST return the results as a JSON array of objects. 
+      Each object must have: 
+      - id: a unique string
+      - title: the job title
+      - company: the company name
+      - location: the city or region
+      - type: e.g., "Full-time", "Contract"
+      - description: 1-2 sentences summarizing the role
+      - requirements: an array of 3-5 key skills or qualifications
+      - salary: the salary range or "Negotiable"
+      - sourceUrl: the direct link to the job post
+      
+      If you cannot find any real jobs, return an empty array []. 
+      Do NOT include any text outside of the JSON array.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: prompt,
         config: { 
           responseMimeType: "application/json",
@@ -44,11 +63,41 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
       });
 
       if (response.text) {
-        const results = JSON.parse(response.text);
-        setJobs(results);
+        try {
+          const results = JSON.parse(response.text);
+          if (Array.isArray(results)) {
+            setJobs(results);
+            if (results.length === 0) {
+              console.log("No jobs found for query:", activeQuery);
+            }
+          } else {
+            console.error("Results is not an array:", results);
+            setJobs([]);
+          }
+        } catch (e) {
+          console.error("JSON Parse Error:", e);
+          // Try to extract JSON if it's wrapped in markdown
+          const jsonMatch = response.text.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            try {
+              const results = JSON.parse(jsonMatch[0]);
+              setJobs(Array.isArray(results) ? results : []);
+            } catch (innerE) {
+              console.error("Inner JSON Parse Error:", innerE);
+              setJobs([]);
+            }
+          } else {
+            setJobs([]);
+          }
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Job search error:", error);
+      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key not valid')) {
+        alert("The provided GEMINI_API_KEY is invalid. Please check your key.");
+      } else {
+        alert("Failed to fetch jobs. This could be due to a network issue or API limit.");
+      }
     }
     setIsSearching(false);
   };
@@ -95,10 +144,19 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
           <button 
             onClick={() => searchJobs()}
             disabled={isSearching}
-            className="bg-primary text-white px-8 py-3 rounded-2xl font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="bg-primary text-white px-8 py-3 rounded-2xl font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-w-[180px]"
           >
-            {isSearching ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-            Search Jobs
+            {isSearching ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Searching Web...</span>
+              </>
+            ) : (
+              <>
+                <Search size={20} />
+                <span>Search Jobs</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -159,7 +217,13 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
                   <Briefcase className="text-slate-300" size={32} />
                 </div>
                 <h3 className="text-lg font-bold text-slate-400">No jobs found yet</h3>
-                <p className="text-slate-400 text-sm">Try searching for "Accountant" or "Software Developer"</p>
+                <p className="text-slate-400 text-sm mb-6">Try searching for "Accountant" or "Software Developer"</p>
+                <button 
+                  onClick={() => searchJobs('Latest jobs')}
+                  className="px-6 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all"
+                >
+                  Refresh Latest Jobs
+                </button>
               </div>
             )}
           </div>
