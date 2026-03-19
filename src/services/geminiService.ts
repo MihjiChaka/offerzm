@@ -1,17 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 
 const getApiKey = () => {
-  // Try multiple sources for the API key
-  // 1. process.env (injected by Vite define)
-  // 2. import.meta.env (Vite's native way)
-  // 3. window.GOOGLE_MAPS_PLATFORM_KEY (just in case)
-  const key = 
-    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
-    (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) || 
-    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-    (import.meta as any).env?.GEMINI_API_KEY ||
-    "";
-  return key;
+  // 1. Check process.env.GEMINI_API_KEY (injected by Vite define)
+  // 2. Check import.meta.env.VITE_GEMINI_API_KEY (standard Vite way)
+  // 3. Fallback to empty string
+  return (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
 };
 
 const apiKey = getApiKey();

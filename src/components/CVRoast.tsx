@@ -10,13 +10,7 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const getApiKey = () => {
-  const key = 
-    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
-    (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) || 
-    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-    (import.meta as any).env?.GEMINI_API_KEY ||
-    "";
-  return key;
+  return (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
 };
 
 const apiKey = getApiKey();
