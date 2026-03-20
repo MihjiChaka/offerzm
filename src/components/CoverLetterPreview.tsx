@@ -115,32 +115,32 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
         data-page={pageNum + 1}
         className={cn(
           "bg-white shadow-lg mx-auto mb-8 relative flex flex-col page-container",
-          isMini ? "w-full h-full" : "w-[210mm] min-h-[297mm] p-[20mm] text-slate-800"
+          isMini ? "w-full h-full" : "w-[210mm] min-h-[297mm] py-[30mm] px-[50mm] text-slate-900"
         )}
         style={{
           boxSizing: 'border-box',
           fontSize: '11pt',
-          lineHeight: '1.6',
+          lineHeight: '1.25',
         }}
       >
         {isFirstPage && (
           <>
             {templateId === 'modern' && (
-              <div className="border-t-[6px] border-primary pt-10 mb-10">
-                <div className="flex justify-between items-start mb-12">
-                  <div>
-                    <h1 className="text-4xl font-display font-bold text-primary tracking-tight mb-2">
-                      {data.personal.fullName || "Your Name"}
-                    </h1>
-                    <div className="flex flex-col gap-1 text-[10pt] text-slate-500">
-                      <div className="flex items-center"><span className="text-primary font-bold mr-2">Email:</span> {data.personal.email}</div>
-                      <div className="flex items-center"><span className="text-primary font-bold mr-2">Phone:</span> {data.personal.phone}</div>
-                      <div className="flex items-center"><span className="text-primary font-bold mr-2">Location:</span> {data.personal.location}</div>
-                    </div>
-                  </div>
+              <div className="mb-12">
+                <div className="flex flex-col items-end mb-12 text-right space-y-0.5">
+                  <div className="text-[12pt] font-bold uppercase tracking-tight">{data.personal.fullName || "Your Name"}</div>
+                  <div className="text-[11pt]">{data.personal.phone}</div>
+                  <div className="text-[11pt] italic">{data.personal.email}</div>
+                  <div className="text-[11pt]">{data.personal.location}</div>
+                  <div className="pt-10 text-[11pt] italic">{formatDate(data.content.date) || new Date().toLocaleDateString()}</div>
                 </div>
-                <div className="h-px bg-slate-100 w-full mb-12" />
-                {renderRecipient()}
+                
+                <div className="mb-12 text-[11pt] text-slate-900 space-y-0.5">
+                  {data.recipient.position && <div>{data.recipient.position}</div>}
+                  <div className="font-medium">{data.recipient.company || "Company Name"}</div>
+                  <div className="italic max-w-[80%]">{data.recipient.address || "Company Address"}</div>
+                  <div className="italic">{data.recipient.address && "Zambia"}</div>
+                </div>
               </div>
             )}
             {templateId === 'creative' && (
@@ -186,13 +186,17 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
         )}
 
         <div className={cn(
-          "text-[11pt] text-slate-800 leading-[1.7] space-y-6 flex-1",
+          "text-[11pt] text-slate-900 leading-[1.25] space-y-6 flex-1",
           templateId === 'minimal' && "font-serif",
           templateId === 'creative' && !isFirstPage && "pl-[10%]"
         )}>
           {isFirstPage && data.content.subject && (
-            <div className="font-bold text-[12pt] text-primary border-b border-slate-100 pb-2 mb-6 uppercase tracking-wide">
-              RE: {data.content.subject}
+            <div className={cn(
+              "font-bold text-[11pt] text-slate-900 mb-12 uppercase tracking-tight",
+              templateId === 'modern' ? "underline decoration-1 underline-offset-4" : "text-primary border-b border-slate-100 pb-2"
+            )}>
+              {templateId === 'modern' && !data.content.subject.toLowerCase().includes('job reference') && !data.content.subject.toLowerCase().includes('re:') ? 'RE: ' : ''}
+              {data.content.subject}
             </div>
           )}
           

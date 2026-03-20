@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { View } from '../App';
-import { getExpertSuggestions, ai, apiKey } from '../services/geminiService';
+import { getExpertSuggestions, ai, apiKey, withTimeout } from '../services/geminiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentPreviewWrapper from './DocumentPreviewWrapper';
@@ -59,6 +59,9 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
   const [cvScore, setCvScore] = useState<{ score: number; tips: string[] } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const tailorCV = async () => {
     if (!selectedJob) return;
@@ -77,11 +80,11 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
       Keep the personal info, education, and references as they are unless they need minor tweaks for relevance.
       Return the updated CV data in the same JSON format.`;
 
-      const response = await ai.models.generateContent({
+      const response = await withTimeout(ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: { responseMimeType: "application/json" }
-      });
+      }), 45000); // 45s for tailoring
 
       if (response.text) {
         const tailoredData = JSON.parse(response.text);
@@ -112,10 +115,10 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
         return;
       }
       const prompt = `Generate a professional 2-3 sentence CV summary for ${data.personal.fullName} who has skills in: ${data.skills.join(', ')}. Make it enticing for recruiters.`;
-      const response = await ai.models.generateContent({
+      const response = await withTimeout(ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
-      });
+      }), 20000); // 20s for summary
       if (response.text) {
         setData(prev => ({
           ...prev,
@@ -272,6 +275,30 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
     setIsGenerating(false);
   };
 
+  const generateHiringEmail = async () => {
+    setIsGeneratingEmail(true);
+    try {
+      const context = `Applicant: ${data.personal.fullName}, Company: ${selectedJob?.company || 'Target Company'}, Position: ${selectedJob?.title || 'Target Position'}. 
+      CV Summary: ${data.personal.summary.substring(0, 300)}...
+      Key Skills: ${data.skills.join(', ')}.
+      The email should be based on this CV and mention that a CV is attached.`;
+      
+      const email = await getExpertSuggestions('hiring_manager_email', context);
+      
+      if (email.startsWith('Error:')) {
+        alert(email);
+      } else {
+        setGeneratedEmail(email);
+        setShowEmailModal(true);
+      }
+    } catch (error: any) {
+      console.error("Generate email error:", error);
+      alert("Failed to generate email. Please try again.");
+    } finally {
+      setIsGeneratingEmail(false);
+    }
+  };
+
   const downloadPDF = async () => {
     if (!cvPreviewRef.current) return;
     setIsDownloading(true);
@@ -327,7 +354,6 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
             el.style.minHeight = '1123px';
             el.style.height = 'auto';
             el.style.margin = '0';
-            el.style.padding = '0';
             el.style.boxShadow = 'none';
           }
           
@@ -764,6 +790,14 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                   {step === 5 && (
                     <div className="flex gap-4">
                       <button 
+                        onClick={generateHiringEmail}
+                        disabled={isGeneratingEmail}
+                        className="flex items-center gap-2 text-primary font-bold hover:text-accent transition-colors disabled:opacity-50"
+                      >
+                        {isGeneratingEmail ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+                        Email
+                      </button>
+                      <button 
                         onClick={sendToWhatsApp}
                         className="flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-full font-bold hover:bg-green-600 transition-all active:scale-95"
                       >
@@ -784,6 +818,57 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
               </div>
             </div>
           </div>
+
+          {/* Email Modal */}
+          <AnimatePresence>
+            {showEmailModal && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden"
+                >
+                  <div className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-2xl font-bold text-primary flex items-center gap-2">
+                        <Mail className="text-accent" />
+                        Hiring Manager Email
+                      </h3>
+                      <button 
+                        onClick={() => setShowEmailModal(false)}
+                        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                    
+                    <div className="bg-slate-50 rounded-2xl p-6 mb-6 font-mono text-sm whitespace-pre-wrap border border-slate-100 max-h-[400px] overflow-y-auto">
+                      {generatedEmail}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedEmail || '');
+                          alert("Email copied to clipboard!");
+                        }}
+                        className="flex-1 bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary/90 transition-all"
+                      >
+                        Copy to Clipboard
+                      </button>
+                      <button 
+                        onClick={() => setShowEmailModal(false)}
+                        className="flex-1 bg-slate-100 text-primary py-4 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Preview Side */}
           <div className="w-full lg:w-[450px]">

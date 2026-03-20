@@ -2,9 +2,12 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Flame, Share2, RefreshCw, MessageSquare, Trophy, AlertCircle, Upload, FileText, X, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { ai, apiKey } from '../services/geminiService';
+import { ai, apiKey, withTimeout } from '../services/geminiService';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import * as mammoth from 'mammoth';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Configure PDF.js worker using Vite's native worker loading
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -63,18 +66,36 @@ export default function CVRoast() {
     }
   };
 
+  const extractTextFromDocx = async (file: File) => {
+    setExtracting(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      setText(result.value);
+    } catch (error) {
+      console.error("DOCX extraction error:", error);
+      alert("Failed to extract text from DOCX. Please try pasting the text manually.");
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type === 'application/pdf') {
+    const fileType = file.name.split('.').pop()?.toLowerCase();
+
+    if (fileType === 'pdf') {
       extractTextFromPDF(file);
-    } else if (file.type === 'text/plain') {
+    } else if (fileType === 'docx') {
+      extractTextFromDocx(file);
+    } else if (fileType === 'txt') {
       const reader = new FileReader();
       reader.onload = (e) => setText(e.target?.result as string);
       reader.readAsText(file);
     } else {
-      alert("Please upload a PDF or Text file.");
+      alert("Please upload a PDF, DOCX, or Text file.");
     }
   };
 
@@ -90,22 +111,25 @@ export default function CVRoast() {
         return;
       }
       const currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-      const response = await ai.models.generateContent({
+      const response = await withTimeout(ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Today's date is ${currentDate}. Roast this ${typeLabel} text in a funny, witty, but helpful way. Use Zambian slang (like 'mwebantu', 'zed', 'kopala', 'chalila', 'ba boss', 'chi guy') and cultural references. 
         Be brutally honest about formatting, clichés, boring summaries, and generic statements. 
+        
+        CRITICAL: Organize your roast text using Markdown. Use bolding, bullet points, and sections to make it readable and structured.
+        
         Also, provide a '${typeLabel} Score' out of 100 and a funny 'Job Seeker Title' (e.g., 'The Professional Intern', 'The Overqualified Dreamer', 'The Ghost Applicant').
         
         Return the response in this JSON format:
         {
-          "text": "The roast text here...",
+          "text": "The roast text here (formatted with Markdown)...",
           "score": 85,
           "title": "The Zambian CEO in Waiting"
         }
         
         ${typeLabel} Text: ${text}`,
         config: { responseMimeType: "application/json" }
-      });
+      }), 45000); // 45s timeout for roast
 
       const rawText = response.text || '{}';
       const jsonText = rawText.replace(/```json\n?|```/g, '').trim();
@@ -198,14 +222,14 @@ export default function CVRoast() {
                     className="flex items-center gap-2 text-xs font-bold text-orange-500 hover:text-orange-400 transition-colors"
                   >
                     {extracting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    Upload PDF/Text
+                    Upload PDF/DOCX/Text
                   </button>
                 </div>
                 <input 
                   type="file" 
                   ref={fileInputRef}
                   onChange={handleFileUpload}
-                  accept=".pdf,.txt"
+                  accept=".pdf,.txt,.docx"
                   className="hidden"
                 />
               </div>
@@ -258,10 +282,12 @@ export default function CVRoast() {
                 <Trophy className="text-white/40" size={40} />
               </div>
               <div className="p-8">
-                <div className="prose prose-invert max-w-none">
-                  <p className="text-slate-300 leading-relaxed text-lg italic">
-                    "{roast.text}"
-                  </p>
+                <div className="prose prose-invert max-w-none prose-orange">
+                  <div className="text-slate-300 leading-relaxed text-lg">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {roast.text}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </div>

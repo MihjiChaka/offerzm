@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, MapPin, Briefcase, Building2, Sparkles, Loader2, ArrowRight, ExternalLink } from 'lucide-react';
-import { ai, apiKey } from '../services/geminiService';
+import { ai, apiKey, withTimeout } from '../services/geminiService';
 import { View } from '../App';
 
 interface Job {
@@ -21,12 +21,26 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
   const [location, setLocation] = useState('Zambia');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastQuery, setLastQuery] = useState('Latest jobs');
 
-  const searchJobs = async (searchQuery?: string) => {
-    const activeQuery = searchQuery || query;
+  const searchJobs = async (searchQuery?: string, isLoadMore = false) => {
+    const activeQuery = searchQuery || query || lastQuery;
     if (!activeQuery) return;
     
+    const currentPage = isLoadMore ? page + 1 : 1;
     setIsSearching(true);
+    
+    // Get existing job titles to avoid duplicates
+    const existingJobTitles = isLoadMore ? jobs.map(j => `${j.title} at ${j.company}`).join(', ') : '';
+    
+    // Only clear jobs and show full skeleton if it's a fresh search
+    if (!isLoadMore) {
+      setJobs([]);
+      setLastQuery(activeQuery);
+    }
+    
     try {
       if (!apiKey && !(ai as any).apiKey) {
         alert("GEMINI_API_KEY is missing. Please set it in your environment variables or use the 'Connect AI' button.");
@@ -35,11 +49,14 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
       }
       
       const prompt = `I need to find real, current job openings for "${activeQuery}" in "${location}". 
+      This is page ${currentPage} of the results. 
+      CRITICAL: You MUST provide a COMPLETELY DIFFERENT set of 5-8 jobs than the previous pages. 
+      ${existingJobTitles ? `Do NOT repeat any of these jobs: ${existingJobTitles}.` : ''}
       Please use your Google Search tool to find actual listings from reputable sites like LinkedIn, Indeed, GoZambiaJobs, or company career pages. 
       
-      CRITICAL: You MUST return the results as a JSON array of objects. 
+      Return the results as a JSON array of objects. 
       Each object must have: 
-      - id: a unique string
+      - id: a unique string (e.g., "job_123")
       - title: the job title
       - company: the company name
       - location: the city or region
@@ -54,37 +71,44 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
 
       let response;
       try {
-        response = await ai.models.generateContent({
+        // Use a shorter timeout for the web search to fail fast and fallback
+        response = await withTimeout(ai.models.generateContent({
           model: "gemini-3-flash-preview",
           contents: prompt,
           config: { 
             responseMimeType: "application/json",
             tools: [{ googleSearch: {} }]
           }
-        });
+        }), 25000); // 25s for web search
       } catch (searchError: any) {
-        console.warn("Live search failed, falling back to internal knowledge:", searchError);
-        // Fallback: Try without the search tool if the search tool fails
-        response = await ai.models.generateContent({
+        console.warn("Live search failed or timed out, falling back to internal knowledge:", searchError);
+        // Fallback: Try without the search tool if the search tool fails or times out
+        response = await withTimeout(ai.models.generateContent({
           model: "gemini-3-flash-preview",
           contents: `Provide a list of 5 typical, high-probability job openings for "${activeQuery}" in "${location}" based on your internal knowledge of the Zambian job market. 
-          Since live search is currently unavailable, provide realistic examples of roles that are frequently hiring.
           Return the results as a JSON array of objects with fields: id, title, company, location, type, description, requirements (array), salary, sourceUrl (use a generic search link like "https://www.google.com/search?q=jobs+in+zambia").`,
           config: { responseMimeType: "application/json" }
-        });
+        }), 15000); // 15s for fallback
       }
 
       if (response.text) {
         try {
           const results = JSON.parse(response.text);
           if (Array.isArray(results)) {
-            setJobs(results);
+            if (isLoadMore) {
+              setJobs(prev => [...prev, ...results]);
+            } else {
+              setJobs(results);
+            }
+            setPage(currentPage);
+            setHasMore(results.length >= 5);
             if (results.length === 0) {
               console.log("No jobs found for query:", activeQuery);
             }
           } else {
             console.error("Results is not an array:", results);
-            setJobs([]);
+            if (!isLoadMore) setJobs([]);
+            setHasMore(false);
           }
         } catch (e) {
           console.error("JSON Parse Error:", e);
@@ -93,13 +117,22 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
           if (jsonMatch) {
             try {
               const results = JSON.parse(jsonMatch[0]);
-              setJobs(Array.isArray(results) ? results : []);
+              const finalResults = Array.isArray(results) ? results : [];
+              if (isLoadMore) {
+                setJobs(prev => [...prev, ...finalResults]);
+              } else {
+                setJobs(finalResults);
+              }
+              setPage(currentPage);
+              setHasMore(finalResults.length >= 5);
             } catch (innerE) {
               console.error("Inner JSON Parse Error:", innerE);
-              setJobs([]);
+              if (!isLoadMore) setJobs([]);
+              setHasMore(false);
             }
           } else {
-            setJobs([]);
+            if (!isLoadMore) setJobs([]);
+            setHasMore(false);
           }
         }
       }
@@ -179,8 +212,8 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
         {/* Results */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {isSearching ? (
-              // Loading Skeleton
+            {isSearching && jobs.length === 0 ? (
+              // Loading Skeleton for initial search
               <div className="space-y-6">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 animate-pulse">
@@ -201,53 +234,68 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
                 </div>
               </div>
             ) : jobs.length > 0 ? (
-              jobs.map((job) => (
-                <motion.div 
-                  key={job.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:border-accent transition-all group"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{job.title}</h3>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
-                        <span className="flex items-center gap-1"><Building2 size={14} /> {job.company}</span>
-                        <span className="flex items-center gap-1"><MapPin size={14} /> {job.location}</span>
-                        <span className="flex items-center gap-1"><Briefcase size={14} /> {job.type}</span>
+              <>
+                {jobs.map((job) => (
+                  <motion.div 
+                    key={job.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:border-accent transition-all group mb-6"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{job.title}</h3>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                          <span className="flex items-center gap-1"><Building2 size={14} /> {job.company}</span>
+                          <span className="flex items-center gap-1"><MapPin size={14} /> {job.location}</span>
+                          <span className="flex items-center gap-1"><Briefcase size={14} /> {job.type}</span>
+                        </div>
                       </div>
-                    </div>
-                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold">
-                      {job.salary}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-sm mb-4 leading-relaxed">
-                    {job.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {job.requirements.map((req, i) => (
-                      <span key={i} className="bg-slate-50 text-slate-500 px-2 py-1 rounded-lg text-[10px] font-medium uppercase tracking-wider">
-                        {req}
+                      <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold">
+                        {job.salary}
                       </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    </div>
+                    <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+                      {job.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {job.requirements.map((req, i) => (
+                        <span key={i} className="bg-slate-50 text-slate-500 px-2 py-1 rounded-lg text-[10px] font-medium uppercase tracking-wider">
+                          {req}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                      <button 
+                        onClick={() => navigateTo('builder', job)}
+                        className="text-accent text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all"
+                      >
+                        Apply with OfferZM CV <ArrowRight size={16} />
+                      </button>
+                      <button 
+                        onClick={() => job.sourceUrl && window.open(job.sourceUrl, '_blank')}
+                        className="text-slate-400 hover:text-primary transition-colors"
+                        title="View original listing"
+                      >
+                        <ExternalLink size={18} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+                
+                {hasMore && (
+                  <div className="text-center py-8">
                     <button 
-                      onClick={() => navigateTo('builder', job)}
-                      className="text-accent text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all"
+                      onClick={() => searchJobs(lastQuery, true)}
+                      disabled={isSearching}
+                      className="px-8 py-3 bg-white border border-slate-200 text-primary rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
                     >
-                      Apply with OfferZM CV <ArrowRight size={16} />
-                    </button>
-                    <button 
-                      onClick={() => job.sourceUrl && window.open(job.sourceUrl, '_blank')}
-                      className="text-slate-400 hover:text-primary transition-colors"
-                      title="View original listing"
-                    >
-                      <ExternalLink size={18} />
+                      {isSearching ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} className="rotate-90" />}
+                      {isSearching ? 'Loading More...' : 'Load More Jobs'}
                     </button>
                   </div>
-                </motion.div>
-              ))
+                )}
+              </>
             ) : !isSearching && (
               <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">

@@ -82,8 +82,14 @@
     border-color: var(--color-slate-200);
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
-    @apply font-sans text-slate-900 bg-white;
+    @apply font-sans text-slate-900 bg-white antialiased;
+    text-rendering: optimizeLegibility;
   }
   
   h1, h2, h3, h4 {

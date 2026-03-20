@@ -54,6 +54,9 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
   const [data, setData] = useState<CoverLetterData>(initialData);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,13 +89,53 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
       return;
     }
     setIsGenerating(true);
-    const context = `Position: ${data.recipient.position || 'the role'}, Company: ${data.recipient.company}, Applicant: ${data.personal.fullName}`;
-    const suggestion = await getExpertSuggestions('cover_letter', context);
-    setData(prev => ({
-      ...prev,
-      content: { ...prev.content, body: suggestion }
-    }));
-    setIsGenerating(false);
+    try {
+      const context = `Position: ${data.recipient.position || 'the role'}, Company: ${data.recipient.company}, Applicant: ${data.personal.fullName}. 
+      Recipient Name: ${data.recipient.name || 'Hiring Manager'}. 
+      PRIMARY FOCUS - Subject/RE: ${data.content.subject}.
+      
+      CRITICAL: The cover letter body MUST be specifically tailored to the EXACT job title or reference mentioned in the "Subject/RE" field above. 
+      Ensure the tone is professional and the content highlights why the applicant is a great fit for THIS SPECIFIC role at ${data.recipient.company}.`;
+      
+      const suggestion = await getExpertSuggestions('cover_letter', context);
+      
+      if (suggestion.startsWith('Error:')) {
+        alert(suggestion);
+      } else {
+        setData(prev => ({
+          ...prev,
+          content: { ...prev.content, body: suggestion }
+        }));
+      }
+    } catch (error: any) {
+      console.error("Generate body error:", error);
+      alert("Failed to generate cover letter body. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateHiringEmail = async () => {
+    setIsGeneratingEmail(true);
+    try {
+      const context = `Applicant: ${data.personal.fullName}, Company: ${data.recipient.company}, Position: ${data.recipient.position}, Recipient: ${data.recipient.name || 'Hiring Manager'}. 
+      Cover Letter Content: ${data.content.body.substring(0, 500)}...
+      The email should be based on this cover letter and mention that a CV and Cover Letter are attached.`;
+      
+      const email = await getExpertSuggestions('hiring_manager_email', context);
+      
+      if (email.startsWith('Error:')) {
+        alert(email);
+      } else {
+        setGeneratedEmail(email);
+        setShowEmailModal(true);
+      }
+    } catch (error: any) {
+      console.error("Generate email error:", error);
+      alert("Failed to generate email. Please try again.");
+    } finally {
+      setIsGeneratingEmail(false);
+    }
   };
 
   const downloadPDF = async () => {
@@ -159,7 +202,6 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
               el.style.minHeight = '297mm';
               el.style.height = 'auto';
               el.style.margin = '0';
-              el.style.padding = '0';
               el.style.boxShadow = 'none';
             }
             // Ensure all parents are visible and have auto height
@@ -417,19 +459,80 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
                     <ArrowRight size={18} />
                   </button>
                   {step === 3 && (
-                    <button 
-                      onClick={downloadPDF}
-                      disabled={isDownloading}
-                      className="flex items-center gap-2 bg-accent text-primary px-8 py-3 rounded-full font-bold hover:bg-accent-hover transition-all active:scale-95 disabled:opacity-50"
-                    >
-                      {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                      Download PDF
-                    </button>
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={generateHiringEmail}
+                        disabled={isGeneratingEmail}
+                        className="flex items-center gap-2 text-primary font-bold hover:text-accent transition-colors disabled:opacity-50"
+                      >
+                        {isGeneratingEmail ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+                        Generate Email
+                      </button>
+                      <button 
+                        onClick={downloadPDF}
+                        disabled={isDownloading}
+                        className="flex items-center gap-2 bg-accent text-primary px-8 py-3 rounded-full font-bold hover:bg-accent-hover transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                        Download PDF
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Email Modal */}
+          <AnimatePresence>
+            {showEmailModal && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden"
+                >
+                  <div className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-2xl font-bold text-primary flex items-center gap-2">
+                        <Mail className="text-accent" />
+                        Hiring Manager Email
+                      </h3>
+                      <button 
+                        onClick={() => setShowEmailModal(false)}
+                        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        <ArrowLeft size={20} />
+                      </button>
+                    </div>
+                    
+                    <div className="bg-slate-50 rounded-2xl p-6 mb-6 font-mono text-sm whitespace-pre-wrap border border-slate-100 max-h-[400px] overflow-y-auto">
+                      {generatedEmail}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedEmail || '');
+                          alert("Email copied to clipboard!");
+                        }}
+                        className="flex-1 bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary/90 transition-all"
+                      >
+                        Copy to Clipboard
+                      </button>
+                      <button 
+                        onClick={() => setShowEmailModal(false)}
+                        className="flex-1 bg-slate-100 text-primary py-4 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Preview Side */}
           <div className="w-full lg:w-[450px]">

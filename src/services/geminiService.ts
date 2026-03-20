@@ -23,7 +23,26 @@ export const updateApiKey = (newKey: string) => {
 
 const model = "gemini-3-flash-preview";
 
-export async function getExpertSuggestions(type: 'summary' | 'experience' | 'skills' | 'cover_letter' | 'interview_prep', context: string) {
+/**
+ * Helper to wrap a promise with a timeout
+ */
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
+  let timeoutId: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    return result;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export async function getExpertSuggestions(type: 'summary' | 'experience' | 'skills' | 'cover_letter' | 'interview_prep' | 'hiring_manager_email', context: string) {
   try {
     if (!apiKey) {
       return "Error: GEMINI_API_KEY is missing. Please set it in your environment variables.";
@@ -49,12 +68,21 @@ export async function getExpertSuggestions(type: 'summary' | 'experience' | 'ski
       7. Use placeholders like [Specific Achievement] or [Relevant Skill] if you need more detail from the user.`;
     } else if (type === 'interview_prep') {
       prompt += `Generate 5 common interview questions for the job title: ${context}. Return only the questions, one per line.`;
+    } else if (type === 'hiring_manager_email') {
+      prompt += `Write a professional, concise email to a hiring manager to accompany a job application based on this context: ${context}.
+      The email should:
+      1. Be brief and professional (under 150 words).
+      2. State the purpose clearly (applying for the position).
+      3. Mention the attached documents (CV/Cover Letter).
+      4. Express enthusiasm for the role.
+      5. Include a professional sign-off.
+      6. Use a clear subject line starting with "Subject: ".`;
     }
 
-    const response = await ai.models.generateContent({
+    const response = await withTimeout(ai.models.generateContent({
       model,
       contents: prompt,
-    });
+    }), 30000); // 30s timeout
 
     return response.text || "";
   } catch (error: any) {

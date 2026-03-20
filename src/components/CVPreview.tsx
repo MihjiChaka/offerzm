@@ -72,7 +72,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
   if (templateId === 'creative') {
     return (
       <div className="bg-white shadow-lg mx-auto mb-8 relative flex page-container" style={containerStyle}>
-        <div className="w-1/3 bg-primary text-white p-10 flex flex-col gap-8">
+        <div className="w-1/3 bg-primary text-white p-12 flex flex-col gap-8">
           <div className="w-32 h-32 bg-accent rounded-full mx-auto border-4 border-white-20 flex items-center justify-center shadow-xl">
             <span className="text-4xl font-bold text-white tracking-wider">{getInitials(data.personal.fullName)}</span>
           </div>
@@ -97,7 +97,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
             )}
           </div>
         </div>
-        <div className="flex-1 p-12 bg-white overflow-visible">
+        <div className="flex-1 py-16 px-[35mm] bg-white overflow-visible">
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-primary mb-4 break-words leading-tight w-full">{data.personal.fullName || "Your Name"}</h1>
           </div>
@@ -173,7 +173,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
   if (templateId === 'minimal') {
     return (
       <div className="bg-white shadow-lg mx-auto mb-8 flex flex-col items-center page-container" style={containerStyle}>
-        <div className="w-full p-16">
+        <div className="w-full py-20 px-[50mm]">
           <div className="text-center mb-16">
             <h1 className="text-4xl font-light tracking-[0.2em] text-slate-900 uppercase mb-6 break-words leading-tight w-full">{data.personal.fullName || "Your Name"}</h1>
             <div className="flex flex-wrap text-[9pt] text-slate-400 uppercase tracking-[0.2em] justify-center">
@@ -184,7 +184,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
               <span className="mx-4">{data.personal.location}</span>
             </div>
           </div>
-          <div className="max-w-3xl mx-auto space-y-16">
+          <div className="max-w-2xl mx-auto space-y-16">
             {data.personal.summary && (
               <div className="text-center italic text-slate-500 leading-relaxed text-[11pt] font-serif px-12">
                 "{data.personal.summary}"
@@ -197,7 +197,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
                   <div key={exp.id} className="text-center group">
                     <div className="font-bold text-slate-900 text-[12pt] mb-1">{exp.position}</div>
                     <div className="text-[10pt] text-slate-400 uppercase tracking-widest mb-4">{exp.company} | {formatDate(exp.startDate)} — {formatDate(exp.endDate)}</div>
-                    <p className="text-slate-600 text-[10pt] leading-relaxed font-serif max-w-2xl mx-auto">{exp.description}</p>
+                    <p className="text-slate-600 text-[10pt] leading-relaxed font-serif mx-auto">{exp.description}</p>
                   </div>
                 ))}
               </div>
@@ -222,7 +222,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
   if (templateId === 'executive') {
     return (
       <div className="bg-white shadow-lg mx-auto mb-8 border-t-[16px] border-primary page-container" style={containerStyle}>
-        <div className="p-16">
+        <div className="py-20 px-[50mm]">
           <div className="flex justify-between items-end mb-16 border-b-2 border-slate-100 pb-8">
             <div>
               <h1 className="text-4xl font-display font-bold text-primary mb-3 break-words leading-tight w-full">{data.personal.fullName || "Your Name"}</h1>
@@ -319,7 +319,7 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
   // Modern (Default)
   return (
     <div className="bg-white shadow-lg mx-auto mb-8 page-container" style={containerStyle}>
-      <div className="p-16">
+      <div className="py-20 px-[50mm]">
         <div className="border-b-2 border-slate-100 pb-8 mb-10">
           <h1 className="text-4xl font-bold text-primary uppercase mb-4 break-words leading-tight w-full">
             {data.personal.fullName || "Your Name"}
