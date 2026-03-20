@@ -97,14 +97,15 @@ export default function Hero({ navigateTo }: HeroProps) {
                   <div className="h-4 bg-slate-100 rounded-full w-5/6" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-primary-faint p-4 rounded-2xl border border-primary-muted">
-                    <div className="text-accent font-bold text-2xl">98%</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-bold">ATS Score</div>
-                  </div>
-                  <div className="bg-accent-faint p-4 rounded-2xl border border-accent-muted">
-                    <div className="text-primary font-bold text-2xl">100+</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-bold">Templates</div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-primary-faint p-6 rounded-2xl border border-primary-muted flex items-center justify-between">
+                    <div>
+                      <div className="text-accent font-bold text-3xl">98%</div>
+                      <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">ATS Optimization Score</div>
+                    </div>
+                    <div className="hidden sm:block text-primary/20">
+                      <CheckCircle size={40} />
+                    </div>
                   </div>
                 </div>
 
