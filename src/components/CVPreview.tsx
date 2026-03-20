@@ -80,9 +80,9 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
             <div>
               <h2 className="text-[11pt] font-bold uppercase tracking-[0.2em] text-primary mb-4 border-b border-white-10 pb-2">Contact</h2>
               <div className="space-y-4 text-[9pt] opacity-90">
-                {data.personal.email && <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">E:</span> <span className="break-all">{data.personal.email}</span></div>}
-                {data.personal.phone && <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">P:</span> {data.personal.phone}</div>}
-                {data.personal.location && <div className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">L:</span> {data.personal.location}</div>}
+                {data.personal.email && <div key="email" className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">E:</span> <span className="break-all">{data.personal.email}</span></div>}
+                {data.personal.phone && <div key="phone" className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">P:</span> {data.personal.phone}</div>}
+                {data.personal.location && <div key="location" className="flex items-start gap-2"><span className="text-primary font-bold shrink-0">L:</span> {data.personal.location}</div>}
               </div>
             </div>
             {data.skills.length > 0 && (
@@ -157,8 +157,8 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
                     <div className="font-bold text-slate-900 mb-1">{ref.name}</div>
                     <div className="text-accent text-[9pt] mb-2">{ref.position} at {ref.company}</div>
                     <div className="text-slate-500 space-y-1">
-                      <div>{ref.phone}</div>
-                      {ref.email && <div>{ref.email}</div>}
+                      <div key="phone">{ref.phone}</div>
+                      {ref.email && <div key="email">{ref.email}</div>}
                     </div>
                   </div>
                 ))}
@@ -325,9 +325,9 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
             {data.personal.fullName || "Your Name"}
           </h1>
           <div className="flex flex-wrap text-slate-500 text-[10pt] font-medium gap-y-2">
-            {data.personal.email && <div className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Email:</span> {data.personal.email}</div>}
-            {data.personal.phone && <div className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Phone:</span> {data.personal.phone}</div>}
-            {data.personal.location && <div className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Location:</span> {data.personal.location}</div>}
+            {data.personal.email && <div key="email" className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Email:</span> {data.personal.email}</div>}
+            {data.personal.phone && <div key="phone" className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Phone:</span> {data.personal.phone}</div>}
+            {data.personal.location && <div key="location" className="flex items-center mr-8"><span className="text-primary font-bold mr-2">Location:</span> {data.personal.location}</div>}
           </div>
         </div>
 
@@ -395,8 +395,8 @@ export default function CVPreview({ data, templateId, isMini = false }: CVPrevie
                   <div className="font-bold text-slate-900 mb-1">{ref.name}</div>
                   <div className="text-primary font-medium text-[9pt] mb-2">{ref.position} at {ref.company}</div>
                   <div className="text-slate-500 text-[9pt] flex flex-col gap-1">
-                    <div className="flex items-center"><span className="text-primary font-bold mr-2">P:</span> {ref.phone}</div>
-                    {ref.email && <div className="flex items-center"><span className="text-primary font-bold mr-2">E:</span> {ref.email}</div>}
+                    <div key="phone" className="flex items-center"><span className="text-primary font-bold mr-2">P:</span> {ref.phone}</div>
+                    {ref.email && <div key="email" className="flex items-center"><span className="text-primary font-bold mr-2">E:</span> {ref.email}</div>}
                   </div>
                 </div>
               ))}

@@ -5,7 +5,6 @@ import {
   Briefcase, 
   GraduationCap, 
   Wrench, 
-  Sparkles, 
   Download, 
   ArrowLeft, 
   ArrowRight, 
@@ -444,16 +443,16 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    {step === 1 && <User className="text-accent" />}
-                    {step === 2 && <Briefcase className="text-accent" />}
-                    {step === 3 && <GraduationCap className="text-accent" />}
-                    {step === 4 && <Wrench className="text-accent" />}
-                    {step === 5 && <Users className="text-accent" />}
-                    {step === 1 && "Personal Information"}
-                    {step === 2 && "Work Experience"}
-                    {step === 3 && "Education"}
-                    {step === 4 && "Skills & Summary"}
-                    {step === 5 && "References"}
+                    {step === 1 ? <User className="text-accent" /> :
+                     step === 2 ? <Briefcase className="text-accent" /> :
+                     step === 3 ? <GraduationCap className="text-accent" /> :
+                     step === 4 ? <Wrench className="text-accent" /> :
+                     <Users className="text-accent" />}
+                    {step === 1 ? "Personal Information" :
+                     step === 2 ? "Work Experience" :
+                     step === 3 ? "Education" :
+                     step === 4 ? "Skills & Summary" :
+                     "References"}
                   </h2>
                   <span className="text-sm font-bold text-slate-400">Step {step} of 5</span>
                 </div>
@@ -461,6 +460,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                 <AnimatePresence mode="wait">
                   {selectedJob && (
                     <motion.div 
+                      key="selected-job-banner"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="mb-8 p-4 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-between gap-4"
@@ -479,7 +479,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                         disabled={isTailoring}
                         className="px-4 py-2 bg-accent text-primary text-xs font-bold rounded-xl hover:bg-accent-hover transition-all flex items-center gap-2 disabled:opacity-50"
                       >
-                        {isTailoring ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                        {isTailoring && <Loader2 size={14} className="animate-spin" />}
                         Auto-Tailor CV
                       </button>
                     </motion.div>
@@ -675,7 +675,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                             disabled={isGenerating}
                             className="flex items-center gap-2 text-xs font-bold text-accent hover:text-accent-hover transition-colors disabled:opacity-50"
                           >
-                            {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                            {isGenerating && <Loader2 size={14} className="animate-spin" />}
                             Pro Tip
                           </button>
                         </div>
@@ -697,8 +697,8 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                           className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-accent focus:ring-2 focus:ring-accent-muted outline-none transition-all"
                         />
                         <div className="flex flex-wrap gap-2">
-                          {data.skills.map(skill => (
-                            <span key={skill} className="inline-flex items-center gap-2 px-3 py-1 bg-primary-faint text-primary text-xs font-bold rounded-full border border-slate-200">
+                          {data.skills.map((skill, index) => (
+                            <span key={`${skill}-${index}`} className="inline-flex items-center gap-2 px-3 py-1 bg-primary-faint text-primary text-xs font-bold rounded-full border border-slate-200">
                               {skill}
                               <button onClick={() => removeSkill(skill)}><X size={12} /></button>
                             </span>
@@ -822,7 +822,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
           {/* Email Modal */}
           <AnimatePresence>
             {showEmailModal && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm">
+              <div key="email-modal-overlay" className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm">
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -912,7 +912,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                       disabled={isAnalyzing}
                       className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-50"
                     >
-                      {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                      {isAnalyzing && <Loader2 size={18} className="animate-spin" />}
                       Analyze My CV
                     </button>
                   ) : (
@@ -926,7 +926,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
                       </div>
                       <div className="space-y-2">
                         {cvScore.tips.map((tip, i) => (
-                          <div key={i} className="flex items-start gap-2 text-[11px] text-slate-500">
+                          <div key={`tip-${i}`} className="flex items-start gap-2 text-[11px] text-slate-500">
                             <div className="w-1 h-1 bg-accent rounded-full mt-1.5 shrink-0" />
                             {tip}
                           </div>
@@ -947,7 +947,7 @@ export default function CVBuilder({ navigateTo, templateId = 'modern', selectedJ
               <div className="mt-4 p-4 bg-primary-faint rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-accent-muted rounded-full flex items-center justify-center text-accent">
-                    <Sparkles size={20} />
+                    <Zap size={20} />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-primary">Pro Tip</h4>

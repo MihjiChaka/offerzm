@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { View } from '../App';
 
 interface HeroProps {
@@ -22,7 +22,6 @@ export default function Hero({ navigateTo }: HeroProps) {
             transition={{ duration: 0.6 }}
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-faint text-accent font-bold text-sm mb-6">
-              <Sparkles size={16} />
               <span>Professional Excellence</span>
             </div>
             
@@ -110,7 +109,6 @@ export default function Hero({ navigateTo }: HeroProps) {
                 </div>
 
                 <div className="flex items-center gap-2 text-primary font-bold justify-center pt-4">
-                  <Sparkles size={18} className="text-accent" />
                   <span>Expert Optimized for Zambia</span>
                 </div>
               </div>

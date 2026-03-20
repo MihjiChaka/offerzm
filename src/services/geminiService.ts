@@ -64,8 +64,9 @@ export async function getExpertSuggestions(type: 'summary' | 'experience' | 'ski
       3. Connect the applicant's background to the company's needs.
       4. End with a professional call to action.
       5. Use professional language suitable for the Zambian corporate environment.
-      6. Keep it around 250-300 words.
-      7. Use placeholders like [Specific Achievement] or [Relevant Skill] if you need more detail from the user.`;
+      6. Do NOT include any closing word (like "Sincerely", "Regards", "Yours faithfully", etc.) at the end of the letter. The system will handle the sign-off.
+      7. Keep it around 250-300 words.
+      8. Use placeholders like [Specific Achievement] or [Relevant Skill] if you need more detail from the user.`;
     } else if (type === 'interview_prep') {
       prompt += `Generate 5 common interview questions for the job title: ${context}. Return only the questions, one per line.`;
     } else if (type === 'hiring_manager_email') {
@@ -75,7 +76,7 @@ export async function getExpertSuggestions(type: 'summary' | 'experience' | 'ski
       2. State the purpose clearly (applying for the position).
       3. Mention the attached documents (CV/Cover Letter).
       4. Express enthusiasm for the role.
-      5. Include a professional sign-off.
+      5. Do NOT include a closing word (like "Sincerely", "Regards", etc.). Just end the email.
       6. Use a clear subject line starting with "Subject: ".`;
     }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Star, Quote } from 'lucide-react';
+import { Quote } from 'lucide-react';
 
 const testimonials = [
   {
@@ -49,12 +49,6 @@ export default function Testimonials() {
               className="bg-white-5 backdrop-blur-sm p-8 rounded-3xl border border-white-10 relative"
             >
               <Quote className="absolute top-6 right-6 text-accent-muted" size={40} />
-              
-              <div className="flex gap-1 mb-6">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <Star key={star} size={16} fill="#D4AF37" className="text-accent" />
-                ))}
-              </div>
               
               <p className="text-lg text-white-80 mb-8 leading-relaxed italic">
                 "{t.text}"

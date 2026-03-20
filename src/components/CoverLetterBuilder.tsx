@@ -4,7 +4,6 @@ import {
   User, 
   Building2, 
   FileText, 
-  Sparkles, 
   Download, 
   ArrowLeft, 
   ArrowRight, 
@@ -12,7 +11,9 @@ import {
   Phone,
   Mail,
   MapPin,
-  Send
+  Send,
+  Briefcase,
+  Zap
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { View } from '../App';
@@ -25,6 +26,7 @@ import CoverLetterPreview, { CoverLetterData } from './CoverLetterPreview';
 interface CoverLetterBuilderProps {
   navigateTo: (view: View) => void;
   templateId?: string;
+  selectedJob?: any;
 }
 
 const initialData: CoverLetterData = {
@@ -45,19 +47,79 @@ const initialData: CoverLetterData = {
     subject: 'Application for Position',
     salutation: 'Dear Hiring Manager,',
     body: '',
-    closing: 'Sincerely,',
+    closing: '',
   },
 };
 
-export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }: CoverLetterBuilderProps) {
+export default function CoverLetterBuilder({ navigateTo, templateId = 'modern', selectedJob }: CoverLetterBuilderProps) {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<CoverLetterData>(initialData);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isTailoring, setIsTailoring] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (selectedJob) {
+      setData(prev => ({
+        ...prev,
+        recipient: {
+          ...prev.recipient,
+          company: selectedJob.company || '',
+          position: selectedJob.title || '',
+          address: selectedJob.location || ''
+        },
+        content: {
+          ...prev.content,
+          subject: selectedJob.title ? `Application for ${selectedJob.title} position` : prev.content.subject
+        }
+      }));
+    }
+  }, [selectedJob]);
+
+  const tailorCoverLetter = async () => {
+    if (!selectedJob) return;
+    setIsTailoring(true);
+    try {
+      const context = `
+        Job Title: ${selectedJob.title}
+        Company: ${selectedJob.company}
+        Location: ${selectedJob.location}
+        Description: ${selectedJob.description}
+        Applicant Name: ${data.personal.fullName || 'the applicant'}
+      `;
+      
+      const suggestion = await getExpertSuggestions('cover_letter', context);
+      
+      if (suggestion.startsWith('Error:')) {
+        alert(suggestion);
+      } else {
+        setData(prev => ({
+          ...prev,
+          recipient: {
+            ...prev.recipient,
+            company: selectedJob.company,
+            position: selectedJob.title,
+            address: selectedJob.location
+          },
+          content: {
+            ...prev.content,
+            subject: `Application for ${selectedJob.title} position`,
+            body: suggestion
+          }
+        }));
+        setStep(3); // Go to content step to see the result
+      }
+    } catch (error: any) {
+      console.error("Tailor cover letter error:", error);
+      alert("Failed to tailor cover letter. Please try again.");
+    } finally {
+      setIsTailoring(false);
+    }
+  };
 
   const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -249,6 +311,33 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
               </div>
 
               <div className="p-8">
+                {selectedJob && (
+                  <motion.div 
+                    key="selected-job-banner"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8 p-4 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center text-accent">
+                        <Briefcase size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-accent uppercase tracking-wider">Tailoring for:</p>
+                        <p className="text-sm font-bold text-primary">{selectedJob.title} at {selectedJob.company}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={tailorCoverLetter}
+                      disabled={isTailoring}
+                      className="px-4 py-2 bg-accent text-primary rounded-xl text-xs font-bold hover:bg-accent-hover transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isTailoring ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                      Auto-Tailor Now
+                    </button>
+                  </motion.div>
+                )}
+
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
                     {step === 1 && <User className="text-accent" />}
@@ -423,9 +512,19 @@ export default function CoverLetterBuilder({ navigateTo, templateId = 'modern' }
                               disabled={isGenerating}
                               className="flex items-center gap-2 text-xs font-bold text-accent hover:text-accent-hover transition-colors disabled:opacity-50"
                             >
-                              {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                              {isGenerating && <Loader2 size={14} className="animate-spin" />}
                               Generate Body
                             </button>
+                            {selectedJob && (
+                              <button 
+                                onClick={tailorCoverLetter}
+                                disabled={isTailoring}
+                                className="flex items-center gap-2 text-xs font-bold text-primary hover:text-accent transition-colors disabled:opacity-50"
+                              >
+                                {isTailoring && <Loader2 size={14} className="animate-spin" />}
+                                Tailor for Job
+                              </button>
+                            )}
                           </div>
                         </div>
                         <textarea 

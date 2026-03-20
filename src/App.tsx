@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   FileText, 
   Briefcase, 
-  Sparkles, 
   Layout, 
   Users, 
   CheckCircle, 
@@ -204,7 +203,11 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <CoverLetterBuilder navigateTo={navigateTo} templateId={selectedTemplate.replace('cover-', '')} />
+              <CoverLetterBuilder 
+                navigateTo={navigateTo} 
+                templateId={selectedTemplate.replace('cover-', '')} 
+                selectedJob={selectedJob}
+              />
             </motion.div>
           )}
 

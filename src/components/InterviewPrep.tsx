@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   MessageSquare, 
-  Sparkles, 
   CheckCircle, 
   ChevronRight, 
   PlayCircle,
@@ -48,7 +47,7 @@ export default function InterviewPrep() {
               disabled={isGenerating || !jobTitle}
               className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
             >
-              {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+              {isGenerating && <Loader2 size={18} className="animate-spin" />}
               Generate Questions
             </button>
           </div>

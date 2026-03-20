@@ -212,7 +212,7 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
           {/* Only render closing if it's the last page and not already in the body */}
           {isLastPage && (
             <div className="mt-12 pt-8 border-t border-slate-50">
-              {!data.content.body.toLowerCase().includes(data.content.closing.toLowerCase()) && (
+              {data.content.closing && !data.content.body.toLowerCase().includes(data.content.closing.toLowerCase()) && (
                 <div className="mb-2">{data.content.closing}</div>
               )}
               {!data.content.body.toLowerCase().includes(data.personal.fullName.toLowerCase()) && (

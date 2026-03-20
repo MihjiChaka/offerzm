@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, MapPin, Briefcase, Building2, Sparkles, Loader2, ArrowRight, ExternalLink } from 'lucide-react';
+import { Search, MapPin, Briefcase, Building2, Loader2, ArrowRight, ExternalLink } from 'lucide-react';
 import { ai, apiKey, withTimeout } from '../services/geminiService';
 import { View } from '../App';
 
@@ -265,13 +265,20 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
                         </span>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4 border-t border-slate-50">
                       <button 
                         onClick={() => navigateTo('builder', job)}
                         className="text-accent text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all"
                       >
                         Apply with OfferZM CV <ArrowRight size={16} />
                       </button>
+                      <button 
+                        onClick={() => navigateTo('cover-letter-builder', job)}
+                        className="text-primary text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all"
+                      >
+                        Tailor Cover Letter <ArrowRight size={16} />
+                      </button>
+                      <div className="flex-1" />
                       <button 
                         onClick={() => job.sourceUrl && window.open(job.sourceUrl, '_blank')}
                         className="text-slate-400 hover:text-primary transition-colors"
@@ -316,7 +323,6 @@ export default function JobSearch({ navigateTo }: { navigateTo: (view: View, job
           {/* Sidebar */}
           <div className="space-y-6">
             <div className="bg-primary text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
-              <Sparkles className="absolute top-4 right-4 text-accent opacity-50" size={32} />
               <h3 className="text-xl font-bold mb-4 relative z-10">AI Career Coach</h3>
               <p className="text-white/80 text-sm mb-6 relative z-10 leading-relaxed">
                 Get personalized job recommendations and interview tips based on your CV.
