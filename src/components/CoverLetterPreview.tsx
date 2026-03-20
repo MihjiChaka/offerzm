@@ -136,6 +136,7 @@ export default function CoverLetterPreview({ data, templateId, isMini = false }:
                 </div>
                 
                 <div className="mb-12 text-[11pt] text-slate-900 space-y-0.5">
+                  <div className="font-bold">{data.recipient.name || "Hiring Manager"}</div>
                   {data.recipient.position && <div>{data.recipient.position}</div>}
                   <div className="font-medium">{data.recipient.company || "Company Name"}</div>
                   <div className="italic max-w-[80%]">{data.recipient.address || "Company Address"}</div>
